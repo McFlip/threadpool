@@ -21,11 +21,13 @@ typedef struct _queue_st {
 	int num_tasks;
 	_node *head, *tail;
 } _queue;
+
 void init_queue(_queue *q){
 	q->num_tasks = 0;
 	q->head = NULL;
 	q->tail = NULL;
 }
+
 int queue_empty(_queue *q){
 	while(q->head != q->tail){
 		_node *temp = q->head->next;
@@ -35,6 +37,7 @@ int queue_empty(_queue *q){
 	free(q->head);
 	return q->num_tasks = 0;
 }
+
 void enqueue(_queue *q, _node *n){
 	if(q->num_tasks == 0){
 		q->head = q->tail = n;
@@ -49,6 +52,7 @@ void enqueue(_queue *q, _node *n){
 		q->num_tasks++;
 	}
 }
+
 _node * dequeue(_queue *q){
 	_node *temp = q->head;
 	q->head = q->head->next;
@@ -58,7 +62,6 @@ _node * dequeue(_queue *q){
 	q->num_tasks--;
 	return temp;
 }
-
 
 // _threadpool is the internal threadpool structure that is
 // cast to type "threadpool" before it given out to callers
@@ -72,20 +75,8 @@ typedef struct _threadpool_st {
 	_Bool is_shutdown;
 } _threadpool;
 
-threadpool create_threadpool(int num_threads_in_pool) {
-  _threadpool *pool;
 
-  // sanity check the argument
-  if ((num_threads_in_pool <= 0) || (num_threads_in_pool > MAXT_IN_POOL))
-    return NULL;
-
-  pool = (_threadpool *) malloc(sizeof(_threadpool));
-  if (pool == NULL) {
-    fprintf(stderr, "Out of memory creating a new threadpool!\n");
-    return NULL;
-  }
-
- void *thread_main(void *threadpool){
+void *thread_main(void *threadpool){
 	_threadpool *pool = (_threadpool *) threadpool;
 	_node *task;
 	while(1){
@@ -102,10 +93,23 @@ threadpool create_threadpool(int num_threads_in_pool) {
 		(*(task->fn_ptr))(task->arg);
 		free(task);
 	}
-// 	pool->num_threads_in_pool--;
+	// 	pool->num_threads_in_pool--;
 	pthread_exit(NULL);
 	return(NULL);
 }
+
+threadpool create_threadpool(int num_threads_in_pool) {
+  _threadpool *pool;
+
+  // sanity check the argument
+  if ((num_threads_in_pool <= 0) || (num_threads_in_pool > MAXT_IN_POOL))
+    return NULL;
+
+  pool = (_threadpool *) malloc(sizeof(_threadpool));
+  if (pool == NULL) {
+    fprintf(stderr, "Out of memory creating a new threadpool!\n");
+    return NULL;
+  }
 
 
   // add your code here to initialize the newly created threadpool
@@ -114,14 +118,13 @@ threadpool create_threadpool(int num_threads_in_pool) {
   init_queue(&pool->queue);
 	pthread_mutex_init(&pool->pool_mutex, NULL);
 	pthread_cond_init(&pool->pool_condition, NULL);
-	for (int i = 0; i < num_threads_in_pool; i++){
+	int i;
+	for (i = 0; i < num_threads_in_pool; i++){
 		pthread_create(&(pool->thread_id[i]), NULL, thread_main, (void*)pool);
 	}
 
   return (threadpool) pool;
 }
-
-
 
 void dispatch(threadpool from_me, dispatch_fn dispatch_to_here,
 	      void *arg) {
@@ -145,7 +148,8 @@ void destroy_threadpool(threadpool destroyme) {
 	pool->is_shutdown = 1;
 	pthread_cond_broadcast(&pool->pool_condition);
 	pthread_mutex_unlock(&pool->pool_mutex);
-	for (int i = 0; i < pool->num_threads_in_pool; i++){
+	int i;
+	for (i = 0; i < pool->num_threads_in_pool; i++){
 		pthread_join(pool->thread_id[i], NULL);
 	}
 	queue_empty(&pool->queue);
