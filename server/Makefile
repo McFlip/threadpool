@@ -1,4 +1,4 @@
-CC=gcc
+CC=gcc -ggdb -std=gnu99
 AR = ar
 ARFLAGS = ru
 RANLIB = ranlib
