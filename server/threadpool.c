@@ -11,6 +11,15 @@
 
 #include "threadpool.h"
 
+typedef struct _node_st {
+	void *fn_ptr;
+	_node_st *next;
+} _node;
+
+typedef sturct _queue_st {
+	int num_threads_in_pool;
+	_node *head, *tail;
+} _queue;
 // _threadpool is the internal threadpool structure that is
 // cast to type "threadpool" before it given out to callers
 typedef struct _threadpool_st {
