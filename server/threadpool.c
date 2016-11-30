@@ -90,18 +90,19 @@ threadpool create_threadpool(int num_threads_in_pool) {
 	_node *task;
 	while(1){
 		pthread_mutex_lock(&pool->pool_mutex);
-		if(pool->is_shutdown == 0 && pool->queue.num_tasks == 0){
+		while(pool->is_shutdown == 0 && pool->queue.num_tasks == 0){
 			pthread_cond_wait(&(pool->pool_condition), &(pool->pool_mutex));
 		}
 		if(pool->is_shutdown){
-			pthread_mutex_unlock(&pool->pool_mutex);
+			pthread_mutex_unlock(&(pool->pool_mutex));
 			break;
 		}
 		task = dequeue(&pool->queue);
+		pthread_mutex_unlock(&(pool->pool_mutex));
 		(*(task->fn_ptr))(task->arg);
+		free(task);
 	}
-	pool->num_threads_in_pool--;
-	pthread_mutex_unlock(&(pool->pool_mutex));
+// 	pool->num_threads_in_pool--;
 	pthread_exit(NULL);
 	return(NULL);
 }
