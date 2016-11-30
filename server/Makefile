@@ -7,10 +7,10 @@ SRCS= client.c server.c
 LIBS = -L./SocketLibrary/
 
 all:: socketlib client server example_thread threadpool_test
-	strip client
-	strip server
-	strip example_thread
-	strip threadpool_test
+#	strip client
+#	strip server
+#	strip example_thread
+#	strip threadpool_test
 
 socketlib:
 	cd SocketLibrary && make

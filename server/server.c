@@ -18,6 +18,7 @@
 
 #include "SocketLibrary/socklib.h"
 #include "common.h"
+#include "threadpool.h"
 
 extern int errno;
 
@@ -25,6 +26,7 @@ int   setup_listen(char *socketNumber);
 char *read_request(int fd);
 char *process_request(char *request, int *response_length);
 void  send_response(int fd, char *response, int response_length);
+void dispatch(void *arg);
 
 /**
  * This program should be invoked as "./server <socketnumber>", for
@@ -37,14 +39,18 @@ int main(int argc, char **argv)
   int  socket_listen;
   int  socket_talk;
   int  dummy, len;
+  threadpool tp;
 
-  if (argc != 2)
+  if (argc != 3)
   {
-    fprintf(stderr, "(SERVER): Invoke as  './server socknum'\n");
-    fprintf(stderr, "(SERVER): for example, './server 4434'\n");
+    fprintf(stderr, "(SERVER): Invoke as  './server socknum threadpoolSize'\n");
+    fprintf(stderr, "(SERVER): for example, './server 4434 2'\n");
     exit(-1);
   }
 
+	/* Create the threadpool */
+  tp = create_threadpool(argv[2]);
+	
   /* 
    * Set up the 'listening socket'.  This establishes a network
    * IP_address:port_number that other programs can connect with.
@@ -82,25 +88,8 @@ int main(int argc, char **argv)
       perror("");
       exit(1);
     }
-    request = read_request(socket_talk);  // step 2
-    if (request != NULL) {
-      int response_length;
-
-      response = process_request(request, &response_length);  // step 3
-      if (response != NULL) {
-	send_response(socket_talk, response, response_length);  // step 4
-      }
-    }
-    close(socket_talk);  // step 5
-
-    // clean up allocated memory, if any
-    if (request != NULL)
-      free(request);
-    if (response != NULL)
-      free(response);
-  }
-}
-
+		/* Dispatch request to threadpool */
+	}
 
 
 /**
@@ -172,3 +161,23 @@ char *process_request(char *request, int *response_length) {
   return response;
 }
 
+/* My dispatch Function */
+ void dispatch(void *arg) {
+	     request = read_request(socket_talk);  // step 2
+    if (request != NULL) {
+      int response_length;
+
+      response = process_request(request, &response_length);  // step 3
+      if (response != NULL) {
+	send_response(socket_talk, response, response_length);  // step 4
+      }
+    }
+    close(socket_talk);  // step 5
+
+    // clean up allocated memory, if any
+    if (request != NULL)
+      free(request);
+    if (response != NULL)
+      free(response);
+  }
+}
