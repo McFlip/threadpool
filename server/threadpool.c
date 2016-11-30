@@ -23,7 +23,8 @@ typedef struct _queue_st {
 } _queue;
 void init_queue(_queue *q){
 	q->num_tasks = 0;
-	q->head = q->head->next = q->tail = NULL;
+	q->head = NULL;
+	q->tail = NULL;
 }
 int queue_empty(_queue *q){
 	while(q->head != q->tail){
