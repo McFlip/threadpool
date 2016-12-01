@@ -1,4 +1,4 @@
-/**
+ /**
  * server.c, copyright 2001 Steve Gribble
  *
  * The server is a single-threaded program.  First, it opens
@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <errno.h>
+#include <pthread.h>
+#include <stdint.h>
 
 #include "SocketLibrary/socklib.h"
 #include "common.h"
@@ -26,7 +28,7 @@ int   setup_listen(char *socketNumber);
 char *read_request(int fd);
 char *process_request(char *request, int *response_length);
 void  send_response(int fd, char *response, int response_length);
-void dispatch(void *arg);
+void request_handler(void *arg);
 
 /**
  * This program should be invoked as "./server <socketnumber>", for
@@ -49,7 +51,7 @@ int main(int argc, char **argv)
   }
 
 	/* Create the threadpool */
-  tp = create_threadpool(argv[2]);
+  tp = create_threadpool((int)argv[2]);
 	
   /* 
    * Set up the 'listening socket'.  This establishes a network
@@ -88,9 +90,11 @@ int main(int argc, char **argv)
       perror("");
       exit(1);
     }
-		/* Dispatch request to threadpool */
-	}
 
+		/* Dispatch request to threadpool */
+		dispatch(tp, request_handler, (void *) socket_talk);
+	}
+}
 
 /**
  * This function accepts a string of the form "5654", and opens up
@@ -162,22 +166,25 @@ char *process_request(char *request, int *response_length) {
 }
 
 /* My dispatch Function */
- void dispatch(void *arg) {
-	     request = read_request(socket_talk);  // step 2
-    if (request != NULL) {
-      int response_length;
+void request_handler(void *arg) {
+	int socket_talk = (int)(uintptr_t) arg;
+	char *request = NULL;
+	char *response = NULL;
+	request = read_request(socket_talk);  // step 2
+	if (request != NULL) {
+		int response_length;
 
-      response = process_request(request, &response_length);  // step 3
-      if (response != NULL) {
-	send_response(socket_talk, response, response_length);  // step 4
-      }
-    }
-    close(socket_talk);  // step 5
+		response = process_request(request, &response_length);  // step 3
+		if (response != NULL) {
+			send_response(socket_talk, response, response_length);  // step 4
+		}
+	}
+	close(socket_talk);  // step 5
 
-    // clean up allocated memory, if any
-    if (request != NULL)
-      free(request);
-    if (response != NULL)
-      free(response);
-  }
+	// clean up allocated memory, if any
+	if (request != NULL)
+		free(request);
+	if (response != NULL)
+		free(response);
 }
+
